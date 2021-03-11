@@ -1,7 +1,12 @@
 package com.shoppingcart.controller;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,15 +14,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.support.MultipartFilter;
 
 import com.shoppingcart.dto.ProductDTO;
 import com.shoppingcart.model.Category;
+import com.shoppingcart.model.Product;
 import com.shoppingcart.service.Imp.CategoryService;
 import com.shoppingcart.service.Imp.ProductService;
 
 @Controller
 public class AdminController {
-
+   public static String uploadDri = System.getProperty("user.dir") + "/src/main/resources/static/productImages";
 	@Autowired
 	CategoryService categorySerive;
 	@Autowired
@@ -81,6 +90,45 @@ public class AdminController {
 		return "productsAdd";
 
 	}
+	
+	@PostMapping("/admin/products/add")
+	public String productAddPost(@ModelAttribute("productDTO")ProductDTO productDTO,
+			                     @RequestParam("productImage")MultipartFile file,
+			                     @RequestParam("imgName")String imgName) throws IOException{
+		
+		Product product = new Product();
+		/*
+		 * BeanUtils.copyProperties(productDTO, product);
+		 * productSerive.addProduct(product);
+		 */
+		
+		product.setId(productDTO.getId());
+		product.setName(productDTO.getName());
+		product.setPrice(productDTO.getPrice());
+        product.setWeight(productDTO.getWeight());
+        product.setDescription(productDTO.getDescription());
+        product.setCategory(categorySerive.getCategoryById(productDTO.getCategoryId()).get());
+        
+        String imageUUID;
+       if(!file.isEmpty()) {
+    	   
+    	   imageUUID = file.getOriginalFilename();
+    	   Path fileNameAndPath = Paths.get(uploadDri, imageUUID);
+    	   Files.write(fileNameAndPath, file.getBytes());
+       }
+       else 
+    	   imageUUID = imgName;
+    	  
+       
+       product.setImageName(imageUUID);
+       productSerive.addProduct(product);
+       System.out.println(uploadDri);
+		return "redirect:/admin/products";
+		
+		
+	}
+	
+	
 
 
 }
